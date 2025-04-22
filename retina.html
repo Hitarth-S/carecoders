@@ -618,6 +618,22 @@
           analyzeBtn.innerHTML = 'Analyze Retinal Images';
         }
       });
+
+      async function uploadReportToSupabase(pdfBlob, patientData) {
+        // If supabase client is not defined, log a message and return
+        if (typeof supabaseClient === 'undefined') {
+          console.warn('Supabase client not defined, skipping upload');
+          return Promise.resolve();
+        }
+        
+        try {
+          // Your Supabase upload code here
+          return Promise.resolve();
+        } catch (error) {
+          console.error('Supabase upload error:', error);
+          return Promise.resolve(); // Don't fail the download if upload fails
+        }
+      }
       
       // Generate and download PDF report
       downloadReportBtn.addEventListener('click', async function() {
