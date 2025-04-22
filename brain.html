@@ -591,9 +591,11 @@
         }
       }
       
-      // Generate and download PDF report
       downloadReportBtn.addEventListener('click', async function() {
-        if (!diagnosisResult) return;
+        if (!diagnosisResult) {
+          alert('No diagnosis results available. Please analyze an image first.');
+          return;
+        }
         
         try {
           downloadReportBtn.disabled = true;
@@ -601,37 +603,46 @@
           
           // Collect patient data
           const patientData = {
-            name: patientName.value,
-            patientId: patientId.value,
-            age: patientAge.value,
-            testType: 'Brain MRI Analysis'
+            name: patientName.value || 'Unknown',
+            patientId: patientId.value || 'Unknown',
+            age: patientAge.value || 'Unknown',
+            testType: 'Brain MRI Analysis' // Change this based on the page
           };
           
           // Collect diagnosis data
           const diagnosisData = {
-            testType: 'Brain MRI Analysis',
-            prediction: diagnosisResult.prediction,
-            confidence: diagnosisResult.confidence_scores[diagnosisResult.prediction].toFixed(1),
-            visualizationImage: diagnosisResult.visualization_image,
-            metadata: 'No additional information available for this condition.'
+            testType: 'Brain MRI Analysis', // Change this based on the page
+            prediction: diagnosisResult.prediction || 'Unknown',
+            confidence: diagnosisResult.confidence_scores ? 
+              diagnosisResult.confidence_scores[diagnosisResult.prediction]?.toFixed(1) || '0' : '0',
+            visualizationImage: diagnosisResult.visualization_image || null,
+            metadata: diseaseMeta[diagnosisResult.prediction] || 'No additional information available for this condition.'
           };
           
-          // Generate the PDF
-          const pdfDoc = generatePDFReport(patientData, diagnosisData);
+          // Generate the PDF - wrap in try/catch to handle errors
+          let pdfDoc;
+          try {
+            console.log('Generating PDF with data:', { patientData, diagnosisData });
+            pdfDoc = generatePDFReport(patientData, diagnosisData);
+          } catch (pdfError) {
+            console.error('PDF generation error:', pdfError);
+            throw new Error(`Failed to generate PDF: ${pdfError.message}`);
+          }
           
-          // Save PDF to blob for uploading to Supabase
-          const pdfBlob = pdfDoc.output('blob');
+          // Try to upload to Supabase, but don't block download if it fails
+          try {
+            const pdfBlob = pdfDoc.output('blob');
+            await uploadReportToSupabase(pdfBlob, patientData).catch(console.error);
+          } catch (uploadError) {
+            console.error('Upload error (continuing with download):', uploadError);
+          }
           
-          // Upload to Supabase
-          await uploadReportToSupabase(pdfBlob, patientData);
+          // Save PDF locally - this should work even if upload fails
+          pdfDoc.save(`Diagno+_Report_${patientId.value || 'Unknown'}.pdf`);
           
-          // Save PDF locally
-          pdfDoc.save(`Diagno+_Brain_Report_${patientId.value}.pdf`);
-          
-          alert('Report saved successfully and securely stored in the cloud.');
         } catch (error) {
-          console.error('Error generating report:', error);
-          alert('Error generating report. Please try again.');
+          console.error('Error in report generation:', error);
+          alert(`Error generating report: ${error.message}. Please try again or check console for details.`);
         } finally {
           downloadReportBtn.disabled = false;
           downloadReportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Download Report';
