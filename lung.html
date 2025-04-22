@@ -582,63 +582,73 @@
           return Promise.resolve(); // Don't fail the download if upload fails
         }
       }
+
+      const diseaseMeta = {
+        "Adenocarcinoma": "Adenocarcinoma is a type of non-small cell lung cancer that begins in the cells that line the alveoli and produce substances such as mucus. It's the most common form of lung cancer and often occurs in current or former smokers, though it's also the most common type of lung cancer in non-smokers.",
+        "Large Cell Carcinoma": "Large cell carcinoma is a type of non-small cell lung cancer that can appear in any part of the lung and tends to grow and spread quickly. It's characterized by large, abnormal-looking cells under a microscope.",
+        "Squamous Cell Carcinoma": "Squamous cell carcinoma is a type of non-small cell lung cancer that develops in the flat cells that line the inside of the airways in the lungs. It's strongly associated with a history of smoking and tends to be found in the central part of the lungs.",
+        "Small Cell Carcinoma": "Small cell lung cancer is an aggressive form of lung cancer that is strongly linked to cigarette smoking. It tends to grow and spread faster than non-small cell lung cancer and is usually discovered after it has spread extensively.",
+        "No Cancer Detected": "No evidence of lung cancer was detected in the analyzed CT scan. Regular follow-up examinations may be recommended based on patient risk factors and medical history.",
+        "Pneumonia": "Pneumonia is an infection that inflames the air sacs in one or both lungs. The air sacs may fill with fluid or pus, causing cough with phlegm or pus, fever, chills, and difficulty breathing.",
+        "Tuberculosis": "Tuberculosis (TB) is a potentially serious infectious disease that mainly affects the lungs. The bacteria that cause TB are spread from person to person through tiny droplets released into the air via coughs and sneezes."
+      };
       
       // Generate and download PDF report
-      downloadReportBtn.addEventListener('click', async function() {
-      if (!diagnosisResult) {
-        alert('No diagnosis results available. Please analyze an image first.');
-        return;
-      }
+      downloadReportBtn.addEventListener('click', async function() { 
+        if (!diagnosisResult) { 
+          alert('No diagnosis results available. Please analyze an image first.'); 
+          return; 
+        }
       
-      try {
-        downloadReportBtn.disabled = true;
-        downloadReportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating Report...';
-        
-        // Collect patient data
-        const patientData = {
-          name: patientName.value || 'Unknown',
-          patientId: patientId.value || 'Unknown',
-          age: patientAge.value || 'Unknown',
-          testType: 'Lung Analysis' // Change this based on the page
-        };
-        
-        // Collect diagnosis data
-        const diagnosisData = {
-          testType: 'Lung Analysis', // Change this based on the page
-          prediction: diagnosisResult.prediction || 'Unknown',
-          confidence: diagnosisResult.confidence_scores ? 
-            diagnosisResult.confidence_scores[diagnosisResult.prediction]?.toFixed(1) || '0' : '0',
-          visualizationImage: diagnosisResult.visualization_image || null,
-          metadata: diseaseMeta[diagnosisResult.prediction] || 'No additional information available for this condition.'
-        };
-        
-        // Generate the PDF - wrap in try/catch to handle errors
-        let pdfDoc;
         try {
-          console.log('Generating PDF with data:', { patientData, diagnosisData });
-          pdfDoc = generatePDFReport(patientData, diagnosisData);
-        } catch (pdfError) {
-          console.error('PDF generation error:', pdfError);
-          throw new Error(`Failed to generate PDF: ${pdfError.message}`);
-        }
-        
-        // Try to upload to Supabase, but don't block download if it fails
-        try {
-          const pdfBlob = pdfDoc.output('blob');
-          await uploadReportToSupabase(pdfBlob, patientData).catch(console.error);
-        } catch (uploadError) {
-          console.error('Upload error (continuing with download):', uploadError);
-        }
-        
-        // Save PDF locally - this should work even if upload fails
-        pdfDoc.save(`Diagno+_Report_${patientId.value || 'Unknown'}.pdf`);
-        
-      } catch (error) {
-        console.error('Error in report generation:', error);
-        alert(`Error generating report: ${error.message}. Please try again or check console for details.`);
-      } finally {
-        downloadReportBtn.disabled = false;
-        downloadReportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Download Report';
+          downloadReportBtn.disabled = true;
+          downloadReportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating Report...';
+          
+          // Collect patient data
+          const patientData = {
+            name: patientName.value || 'Unknown',
+            patientId: patientId.value || 'Unknown',
+            age: patientAge.value || 'Unknown',
+            testType: 'Lung Analysis' // Change this based on the page
+          };
+          
+          // Collect diagnosis data
+          const diagnosisData = {
+            testType: 'Lung Analysis', // Change this based on the page
+            prediction: diagnosisResult.prediction || 'Unknown',
+            confidence: diagnosisResult.confidence_scores ? 
+              diagnosisResult.confidence_scores[diagnosisResult.prediction]?.toFixed(1) || '0' : '0',
+            visualizationImage: diagnosisResult.visualization_image || null,
+            metadata: diseaseMeta[diagnosisResult.prediction] || 'No additional information available for this condition.'
+          };
+          
+          // Generate the PDF - wrap in try/catch to handle errors
+          let pdfDoc;
+          try {
+            console.log('Generating PDF with data:', { patientData, diagnosisData });
+            pdfDoc = generatePDFReport(patientData, diagnosisData);
+          } catch (pdfError) {
+            console.error('PDF generation error:', pdfError);
+            throw new Error(`Failed to generate PDF: ${pdfError.message}`);
+          }
+          
+          // Try to upload to Supabase, but don't block download if it fails
+          try {
+            const pdfBlob = pdfDoc.output('blob');
+            await uploadReportToSupabase(pdfBlob, patientData).catch(console.error);
+          } catch (uploadError) {
+            console.error('Upload error (continuing with download):', uploadError);
+          }
+          
+          // Save PDF locally - this should work even if upload fails
+          pdfDoc.save(`Diagno+_Report_${patientId.value || 'Unknown'}.pdf`);
+          
+        } catch (error) {
+          console.error('Error in report generation:', error);
+          alert(`Error generating report: ${error.message}. Please try again or check console for details.`);
+        } finally {
+          downloadReportBtn.disabled = false;
+          downloadReportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Download Report';
         }
       });
     });
