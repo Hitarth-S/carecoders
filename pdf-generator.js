@@ -1,7 +1,7 @@
 function generatePDFReport(patientData, diagnosisData) {
 
   // Make sure jsPDF is properly initialized
-  const { jsPDF } = window.jspdf;
+
   if (!jsPDF) {
     console.error("jsPDF is not available");
     throw new Error("PDF library not loaded correctly");
