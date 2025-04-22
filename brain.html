@@ -591,62 +591,71 @@
         }
       }
       
-      downloadReportBtn.addEventListener('click', async function() {
-        if (!diagnosisResult) {
-          alert('No diagnosis results available. Please analyze an image first.');
-          return;
+      const diseaseMeta = {
+      "Meningioma": "Meningioma is typically a slow-growing tumor that forms from the meninges — the membranes that surround the brain and spinal cord. Most meningiomas are noncancerous (benign), though some may be cancerous (malignant). Treatment often involves surgical removal and/or radiation therapy.",
+      "Glioma": "Glioma is a type of tumor that occurs in the brain and spinal cord. A glioma begins in the glial cells that surround and support nerve cells. Treatment may include surgery, radiation therapy, chemotherapy, or observation depending on type and grade.",
+      "Pituitary Tumor": "Pituitary tumors are abnormal growths that develop in the pituitary gland at the base of the brain. Most are benign (not cancer) and don't spread to other parts of the body. Treatment may include surgery, medication, radiation therapy, or a combination.",
+      "No Tumor": "No evidence of brain tumor was detected in the analyzed MRI scan. Regular follow-up examinations may be recommended based on patient symptoms and medical history.",
+      "Multiple Sclerosis": "Multiple sclerosis (MS) is a potentially disabling disease of the brain and spinal cord. In MS, the immune system attacks the protective sheath (myelin) that covers nerve fibers and causes communication problems between the brain and the rest of the body.",
+      "Alzheimer's Disease": "Alzheimer's disease is a progressive neurologic disorder that causes the brain to shrink (atrophy) and brain cells to die. It's the most common cause of dementia — a continuous decline in thinking, behavioral and social skills that affects daily functioning."
+    };
+    
+    downloadReportBtn.addEventListener('click', async function() {
+      if (!diagnosisResult) {
+        alert('No diagnosis results available. Please analyze an image first.');
+        return;
+      }
+      
+      try {
+        downloadReportBtn.disabled = true;
+        downloadReportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating Report...';
+        
+        // Collect patient data
+        const patientData = {
+          name: patientName.value || 'Unknown',
+          patientId: patientId.value || 'Unknown',
+          age: patientAge.value || 'Unknown',
+          testType: 'Brain MRI Analysis' // Change this based on the page
+        };
+        
+        // Collect diagnosis data
+        const diagnosisData = {
+          testType: 'Brain MRI Analysis', // Change this based on the page
+          prediction: diagnosisResult.prediction || 'Unknown',
+          confidence: diagnosisResult.confidence_scores ? 
+            diagnosisResult.confidence_scores[diagnosisResult.prediction]?.toFixed(1) || '0' : '0',
+          visualizationImage: diagnosisResult.visualization_image || null,
+          // Use the disease metadata if available, otherwise provide default message
+          metadata: diseaseMeta[diagnosisResult.prediction] || 'No additional information available for this condition.'
+        };
+        
+        // Generate the PDF - wrap in try/catch to handle errors
+        let pdfDoc;
+        try {
+          console.log('Generating PDF with data:', { patientData, diagnosisData });
+          pdfDoc = generatePDFReport(patientData, diagnosisData);
+        } catch (pdfError) {
+          console.error('PDF generation error:', pdfError);
+          throw new Error(`Failed to generate PDF: ${pdfError.message}`);
         }
         
+        // Try to upload to Supabase, but don't block download if it fails
         try {
-          downloadReportBtn.disabled = true;
-          downloadReportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating Report...';
-          
-          // Collect patient data
-          const patientData = {
-            name: patientName.value || 'Unknown',
-            patientId: patientId.value || 'Unknown',
-            age: patientAge.value || 'Unknown',
-            testType: 'Brain MRI Analysis' // Change this based on the page
-          };
-          
-          // Collect diagnosis data
-          const diagnosisData = {
-            testType: 'Brain MRI Analysis', // Change this based on the page
-            prediction: diagnosisResult.prediction || 'Unknown',
-            confidence: diagnosisResult.confidence_scores ? 
-              diagnosisResult.confidence_scores[diagnosisResult.prediction]?.toFixed(1) || '0' : '0',
-            visualizationImage: diagnosisResult.visualization_image || null,
-            metadata: diseaseMeta[diagnosisResult.prediction] || 'No additional information available for this condition.'
-          };
-          
-          // Generate the PDF - wrap in try/catch to handle errors
-          let pdfDoc;
-          try {
-            console.log('Generating PDF with data:', { patientData, diagnosisData });
-            pdfDoc = generatePDFReport(patientData, diagnosisData);
-          } catch (pdfError) {
-            console.error('PDF generation error:', pdfError);
-            throw new Error(`Failed to generate PDF: ${pdfError.message}`);
-          }
-          
-          // Try to upload to Supabase, but don't block download if it fails
-          try {
-            const pdfBlob = pdfDoc.output('blob');
-            await uploadReportToSupabase(pdfBlob, patientData).catch(console.error);
-          } catch (uploadError) {
-            console.error('Upload error (continuing with download):', uploadError);
-          }
-          
-          // Save PDF locally - this should work even if upload fails
-          pdfDoc.save(`Diagno+_Report_${patientId.value || 'Unknown'}.pdf`);
-          
-        } catch (error) {
-          console.error('Error in report generation:', error);
-          alert(`Error generating report: ${error.message}. Please try again or check console for details.`);
-        } finally {
-          downloadReportBtn.disabled = false;
-          downloadReportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Download Report';
+          const pdfBlob = pdfDoc.output('blob');
+          await uploadReportToSupabase(pdfBlob, patientData).catch(console.error);
+        } catch (uploadError) {
+          console.error('Upload error (continuing with download):', uploadError);
         }
+        
+        // Save PDF locally - this should work even if upload fails
+        pdfDoc.save(`Diagno+_Report_${patientId.value || 'Unknown'}.pdf`);
+        
+      } catch (error) {
+        console.error('Error in report generation:', error);
+        alert(`Error generating report: ${error.message}. Please try again or check console for details.`);
+      } finally {
+        downloadReportBtn.disabled = false;
+        downloadReportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Download Report';
       });
     });
   </script>
