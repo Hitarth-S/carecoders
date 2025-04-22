@@ -599,12 +599,12 @@
           name: patientName.value || 'Unknown',
           patientId: patientId.value || 'Unknown',
           age: patientAge.value || 'Unknown',
-          testType: 'Brain MRI Analysis' // Change this based on the page
+          testType: 'Lung Analysis' // Change this based on the page
         };
         
         // Collect diagnosis data
         const diagnosisData = {
-          testType: 'Brain MRI Analysis', // Change this based on the page
+          testType: 'Lung Analysis', // Change this based on the page
           prediction: diagnosisResult.prediction || 'Unknown',
           confidence: diagnosisResult.confidence_scores ? 
             diagnosisResult.confidence_scores[diagnosisResult.prediction]?.toFixed(1) || '0' : '0',
