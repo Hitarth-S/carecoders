@@ -95,3 +95,4 @@ const diseaseMeta = {
 
   "No_DR": "No Diabetic Retinopathy (No_DR) classification indicates a normal retinal examination in a diabetic patient without signs of microvascular damage. The fundus appears with clear retinal details, normal vascular caliber and branching patterns, and absence of microaneurysms, hemorrhages, exudates, or cotton wool spots. The macula maintains its normal contour and pigmentation without edema. While this finding is reassuring, it doesn't eliminate the need for continued vigilance as diabetic patients remain at risk for developing retinopathy over time. Management focuses on preventive measures including optimal glycemic control, blood pressure management, and regular ophthalmologic screening (annually for most diabetic patients) to detect early changes if they develop."
 };
+window.generatePDFReport = generatePDFReport;
