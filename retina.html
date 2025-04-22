@@ -634,14 +634,25 @@
           return Promise.resolve(); // Don't fail the download if upload fails
         }
       }
+
+      const diseaseMeta = {
+        "No DR": "No Diabetic Retinopathy detected. The retina appears normal with no visible signs of diabetes-related damage. Regular annual screenings are recommended for diabetic patients.",
+        "Mild NPDR": "Mild Non-Proliferative Diabetic Retinopathy is the earliest stage of diabetic retinopathy. Small areas of balloon-like swelling in the retina's tiny blood vessels, called microaneurysms, may occur. These may leak fluid into the retina.",
+        "Moderate NPDR": "Moderate Non-Proliferative Diabetic Retinopathy occurs as the disease progresses. Several microaneurysms appear, and blood vessels that nourish the retina may swell and distort. They may also lose their ability to transport blood.",
+        "Severe NPDR": "Severe Non-Proliferative Diabetic Retinopathy is characterized by many more blocked blood vessels, depriving several areas of the retina of blood supply. These areas secrete growth factors that signal the retina to grow new blood vessels.",
+        "Proliferative DR": "Proliferative Diabetic Retinopathy is the advanced stage where the growth factors secreted by the retina trigger the proliferation of new blood vessels. These new vessels are abnormal and fragile, growing along the retina and into the vitreous gel. They may leak blood, causing severe vision loss and even blindness.",
+        "Macular Edema": "Diabetic Macular Edema is a complication of diabetic retinopathy that causes swelling in the macula, the part of the retina responsible for sharp, central vision. This occurs when fluid leaks from damaged blood vessels and accumulates in the macula.",
+        "Glaucoma": "Glaucoma is a group of eye conditions that damage the optic nerve, often caused by abnormally high pressure in the eye. This damage can lead to permanent vision loss if not treated. Diabetic patients have an increased risk of developing glaucoma."
+        "DR": "Diabetic Retinopathy detected. Diabetic retinopathy is a diabetes complication that damages the retina's blood vessels, potentially leading to vision loss. "
+      };
       
-      // Generate and download PDF report
-      downloadReportBtn.addEventListener('click', async function() {
-        if (!diagnosisResult) {
-          alert('No diagnosis results available. Please analyze an image first.');
-          return;
+      // Generate and download PDF report 
+      downloadReportBtn.addEventListener('click', async function() { 
+        if (!diagnosisResult) { 
+          alert('No diagnosis results available. Please analyze an image first.'); 
+          return; 
         }
-        
+      
         try {
           downloadReportBtn.disabled = true;
           downloadReportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating Report...';
@@ -651,12 +662,12 @@
             name: patientName.value || 'Unknown',
             patientId: patientId.value || 'Unknown',
             age: patientAge.value || 'Unknown',
-            testType: 'Retina Analysis' // Change this based on the page
+            testType: 'Retinal Analysis' // Change this based on the page
           };
           
           // Collect diagnosis data
           const diagnosisData = {
-            testType: 'Retina Analysis', // Change this based on the page
+            testType: 'Retinal Analysis', // Change this based on the page
             prediction: diagnosisResult.prediction || 'Unknown',
             confidence: diagnosisResult.confidence_scores ? 
               diagnosisResult.confidence_scores[diagnosisResult.prediction]?.toFixed(1) || '0' : '0',
@@ -691,7 +702,6 @@
         } finally {
           downloadReportBtn.disabled = false;
           downloadReportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Download Report';
-
         }
       });
     });
