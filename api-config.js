@@ -1,5 +1,5 @@
 // Configuration file for API endpoints
-const API_BASE_URL = 'https://6a21-34-168-148-59.ngrok-free.app';
+const API_BASE_URL = 'https://3f9e-35-224-202-112.ngrok-free.app';
 
 // Export the base URL for use in other files
 export default API_BASE_URL;
