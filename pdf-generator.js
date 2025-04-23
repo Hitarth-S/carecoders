@@ -1,28 +1,28 @@
 function generatePDFReport(patientData, diagnosisData) {
-
-  // Make sure jsPDF is properly initialized
-
-  const { jsPDF } = window.jspdf || {};
-    if (!jsPDF) {
-      console.error("jsPDF is not available");
-      throw new Error("PDF library not loaded correctly");
-    }
+  // Check if jsPDF is available
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    console.error("jsPDF is not available");
+    throw new Error("PDF library not loaded correctly");
+  }
   
+  // Initialize jsPDF (correct way)
   const { jsPDF } = window.jspdf;
-
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
 
+  // Header
   doc.setFontSize(22);
   doc.setTextColor(30, 126, 97);
   doc.text("Diagno+", pageWidth/2, 20, { align: "center" });
   doc.setFontSize(16);
   doc.text("Medical Diagnostic Report", pageWidth/2, 30, { align: "center" });
 
+  // Decorative line
   doc.setDrawColor(30, 126, 97);
   doc.setLineWidth(0.5);
   doc.line(20, 35, pageWidth-20, 35);
 
+  // Patient Information
   doc.setFontSize(12);
   doc.setTextColor(0, 0, 0);
   doc.text("PATIENT INFORMATION", 20, 45);
@@ -32,6 +32,7 @@ function generatePDFReport(patientData, diagnosisData) {
   doc.text(`Age: ${patientData.age}`, 20, 69);
   doc.text(`Report Date: ${new Date().toLocaleDateString()}`, 20, 76);
 
+  // Diagnosis Result
   doc.setFontSize(12);
   doc.text("DIAGNOSIS RESULT", 20, 90);
   doc.setFontSize(10);
@@ -39,27 +40,36 @@ function generatePDFReport(patientData, diagnosisData) {
   doc.text(`Diagnosis: ${diagnosisData.prediction}`, 20, 107);
   doc.text(`Confidence: ${diagnosisData.confidence}%`, 20, 114);
 
+  // Condition Information
   doc.setFontSize(12);
   doc.text("CONDITION INFORMATION", 20, 130);
   doc.setFontSize(9);
 
-  const metadata = diagnosisData.metadata;
+  const metadata = diagnosisData.metadata || "No additional information available.";
   const splitMetadata = doc.splitTextToSize(metadata, pageWidth - 40);
   doc.text(splitMetadata, 20, 140);
 
+  // Add visualization image if available
   if (diagnosisData.visualizationImage) {
-    const imgHeight = 80;
-    let yPosition = 160 + splitMetadata.length * 5; 
+    try {
+      const imgHeight = 80;
+      let yPosition = 160 + splitMetadata.length * 5; 
 
-    if (yPosition + imgHeight > doc.internal.pageSize.getHeight() - 20) {
-      doc.addPage();
-      yPosition = 30;
+      // Add new page if needed
+      if (yPosition + imgHeight > doc.internal.pageSize.getHeight() - 20) {
+        doc.addPage();
+        yPosition = 30;
+      }
+
+      doc.text("DIAGNOSTIC VISUALIZATION", 20, yPosition - 10);
+      doc.addImage(diagnosisData.visualizationImage, 'PNG', 20, yPosition, 170, imgHeight);
+    } catch (imgError) {
+      console.error("Error adding image to PDF:", imgError);
+      doc.text("Image visualization unavailable", 20, 160);
     }
-
-    doc.text("DIAGNOSTIC VISUALIZATION", 20, yPosition - 10);
-    doc.addImage(diagnosisData.visualizationImage, 'PNG', 20, yPosition, 170, imgHeight);
   }
 
+  // Footer
   const footerY = doc.internal.pageSize.getHeight() - 10;
   doc.setFontSize(8);
   doc.setTextColor(100, 100, 100);
@@ -68,32 +78,5 @@ function generatePDFReport(patientData, diagnosisData) {
   return doc;
 }
 
-const diseaseMeta = {
-
-  "Mild Dementia": "Mild Dementia represents an early stage of cognitive decline characterized by subtle memory issues, minor language difficulties, and slight impairment in judgment or problem-solving. Patients typically maintain independence in daily activities but may struggle with complex tasks. Early intervention through cognitive training, lifestyle modifications, and possibly medications like cholinesterase inhibitors may help slow progression. Regular monitoring is essential as this condition often progresses to more severe stages over time.",
-
-  "Moderate Dementia": "Moderate Dementia indicates a more significant cognitive decline where patients experience substantial memory loss affecting both recent and remote memories. Language impairment becomes more pronounced with difficulty finding words and following conversations. Patients require assistance with daily activities and may exhibit behavioral changes including agitation, anxiety, or wandering. This stage often necessitates more comprehensive care planning, medication management for both cognitive and behavioral symptoms, and safety interventions.",
-
-  "Non Demented": "Non-Demented classification indicates normal cognitive function relative to age without evidence of pathological neural degeneration. The brain structures appear normal with appropriate volume in key areas like the hippocampus and cerebral cortex. Cognitive assessment would show intact memory, language, problem-solving, and executive functions. While normal age-related changes may be present, they don't significantly impact daily functioning. Regular health maintenance and preventive strategies are recommended to preserve cognitive health.",
-
-  "Very mild Dementia": "Very Mild Dementia represents a transitional state between normal cognition and mild dementia, sometimes called Mild Cognitive Impairment (MCI). Patients experience memory lapses that exceed normal age-related changes, particularly affecting recent events. They may have subtle difficulties with complex tasks but generally maintain independence. Brain imaging might show early signs of atrophy in memory-related structures. This condition carries an increased risk of progression to dementia, making it a critical time for intervention with cognitive stimulation, vascular risk management, and close monitoring.",
-
-  "glioma": "Glioma is a type of tumor that originates from glial cells in the brain or spinal cord. These tumors vary in aggressiveness from low-grade (slow-growing) to high-grade (rapidly growing) and can cause symptoms depending on their location and size, including headaches, seizures, cognitive changes, and focal neurological deficits. MRI imaging typically shows characteristic features like contrast enhancement patterns and surrounding edema. Treatment approaches include surgical resection, radiation therapy, and chemotherapy, often using temozolomide. Molecular profiling (IDH mutation, 1p/19q codeletion) provides important prognostic information and guides treatment decisions.",
-
-  "healthy": "Healthy brain classification indicates normal neurological structure and function without evidence of pathology. MRI imaging shows appropriate brain volume for age, clear differentiation between gray and white matter, normal ventricular size, and absence of abnormal signal intensities or lesions. Cerebral blood flow patterns appear normal, and there's no evidence of atrophy or inflammation. While normal age-related changes might be present, they follow expected patterns and don't impact functionality. This classification suggests optimal neurological health with no indications for medical intervention beyond routine preventive health measures.",
-
-  "meningioma": "Meningioma is a typically benign tumor arising from the meninges, the protective layers surrounding the brain and spinal cord. These slow-growing tumors often appear as well-circumscribed, extra-axial masses on MRI with characteristic homogeneous enhancement after contrast administration. While many meningiomas remain asymptomatic and are discovered incidentally, others can cause symptoms based on their location, including headaches, seizures, or focal neurological deficits. Treatment options include observation for asymptomatic cases, surgical resection, or stereotactic radiosurgery. Most meningiomas have excellent prognosis, though some may recur based on their histological grade and completeness of resection.",
-
-  "pituitary": "Pituitary tumors (adenomas) develop in the pituitary gland at the base of the brain and can be functioning (hormone-producing) or non-functioning. MRI typically shows a lesion within the sella turcica, potentially extending to surrounding structures. Symptoms may include hormonal imbalances (affecting growth, reproduction, metabolism), headaches, and visual disturbances due to compression of the optic chiasm. Diagnosis involves imaging, hormonal assessment, and visual field testing. Treatment options include medical therapy targeting hormone production, surgical removal (typically transsphenoidal approach), and radiation therapy for residual or recurrent tumors. Regular monitoring of hormonal status and tumor size is essential for management.",
-
-  "Bengin cases": "Benign lung lesions represent non-cancerous abnormalities that may appear on chest imaging. These include hamartomas (the most common benign lung tumor), granulomas (inflammatory lesions often due to infections like tuberculosis), and various cysts. CT imaging typically shows well-defined borders, absence of invasive characteristics, and often calcification patterns or fat components that suggest benignity. While these lesions generally don't require treatment beyond monitoring, definitive diagnosis sometimes requires biopsy to rule out malignancy, especially for larger nodules or those with atypical features. Most benign lesions have excellent prognosis without impact on pulmonary function or life expectancy.",
-
-  "Malignant cases": "Malignant lung findings indicate primary lung cancer or metastatic disease to the lungs. CT imaging typically shows irregular, spiculated nodules or masses with associated features like pleural retraction, vascular convergence, or bronchial involvement. Additional concerning findings include mediastinal lymphadenopathy, pleural effusion, or distant metastases. Primary lung cancers are categorized as small cell or non-small cell (including adenocarcinoma, squamous cell, and large cell carcinomas), each with distinct treatment approaches. Management depends on cancer type, stage, and patient factors, potentially including surgical resection, chemotherapy, radiation, targeted therapy, or immunotherapy. Early detection significantly improves survival outcomes, highlighting the importance of screening in high-risk populations.",
-
-  "Normal cases": "Normal lung imaging demonstrates clear lung fields with appropriate pulmonary vascular markings and no evidence of nodules, masses, consolidation, or fibrosis. The airways appear patent without bronchial wall thickening or bronchiectasis. Lung parenchyma shows uniform density without regions of abnormal increased or decreased attenuation. Pleural surfaces are thin without effusion or thickening, and the mediastinum maintains normal width without lymphadenopathy. Diaphragmatic contours appear smooth with normal positioning. These findings indicate absence of active disease processes and normal pulmonary structure and function, requiring no specific intervention beyond routine health maintenance.",
-
-  "DR": "Diabetic Retinopathy (DR) is a microvascular complication of diabetes affecting the retina, characterized by progressive damage to blood vessels. Early stages (non-proliferative DR) show microaneurysms, dot and blot hemorrhages, hard exudates, and cotton wool spots. Advanced disease (proliferative DR) involves neovascularization with risk of vitreous hemorrhage and tractional retinal detachment. Diabetic macular edema may occur at any stage, causing central vision loss. Diagnosis relies on retinal imaging including fundus photography, OCT, and fluorescein angiography. Management includes tight glycemic control, blood pressure management, lipid therapy, laser photocoagulation, anti-VEGF injections, and vitreoretinal surgery for advanced cases. Regular screening is essential as early treatment significantly reduces risk of severe vision loss.",
-
-  "No_DR": "No Diabetic Retinopathy (No_DR) classification indicates a normal retinal examination in a diabetic patient without signs of microvascular damage. The fundus appears with clear retinal details, normal vascular caliber and branching patterns, and absence of microaneurysms, hemorrhages, exudates, or cotton wool spots. The macula maintains its normal contour and pigmentation without edema. While this finding is reassuring, it doesn't eliminate the need for continued vigilance as diabetic patients remain at risk for developing retinopathy over time. Management focuses on preventive measures including optimal glycemic control, blood pressure management, and regular ophthalmologic screening (annually for most diabetic patients) to detect early changes if they develop."
-};
+// Expose the function globally
 window.generatePDFReport = generatePDFReport;
