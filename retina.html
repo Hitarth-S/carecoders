@@ -660,39 +660,51 @@
           const patientData = {
             name: patientName.value || 'Unknown',
             patientId: patientId.value || 'Unknown',
-            age: patientAge.value || 'Unknown',
-            testType: 'Retinal Analysis' // Change this based on the page
+            age: patientAge.value || 'Unknown'
           };
           
           // Collect diagnosis data
           const diagnosisData = {
-            testType: 'Retinal Analysis', // Change this based on the page
+            testType: 'Retinal Analysis',
             prediction: diagnosisResult.prediction || 'Unknown',
             confidence: diagnosisResult.confidence_scores ? 
               diagnosisResult.confidence_scores[diagnosisResult.prediction]?.toFixed(1) || '0' : '0',
-            visualizationImage: diagnosisResult.visualization_image || null,
             metadata: diseaseMeta[diagnosisResult.prediction] || 'No additional information available for this condition.'
           };
           
-          // Generate the PDF - wrap in try/catch to handle errors
-          let pdfDoc;
-          try {
-            console.log('Generating PDF with data:', { patientData, diagnosisData });
-            pdfDoc = generatePDFReport(patientData, diagnosisData);
-          } catch (pdfError) {
-            console.error('PDF generation error:', pdfError);
-            throw new Error(`Failed to generate PDF: ${pdfError.message}`);
+          // Handle the visualization image
+          if (diagnosisResult.visualization_image) {
+            // Create a new image element to handle the data URL properly
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            
+            // Create a promise to wait for the image to load
+            const imagePromise = new Promise((resolve, reject) => {
+              img.onload = () => resolve();
+              img.onerror = () => reject(new Error("Failed to load image"));
+              img.src = diagnosisResult.visualization_image;
+            });
+            
+            // Wait for image to load before proceeding
+            await imagePromise;
+            diagnosisData.visualizationImage = diagnosisResult.visualization_image;
           }
           
-          // Try to upload to Supabase, but don't block download if it fails
+          // Generate the PDF
+          console.log('Generating PDF with data:', { patientData, diagnosisData });
+          const pdfDoc = generatePDFReport(patientData, diagnosisData);
+          
+          // Try to upload to Supabase if available
           try {
-            const pdfBlob = pdfDoc.output('blob');
-            await uploadReportToSupabase(pdfBlob, patientData).catch(console.error);
+            if (typeof supabaseClient !== 'undefined') {
+              const pdfBlob = pdfDoc.output('blob');
+              await uploadReportToSupabase(pdfBlob, patientData).catch(console.error);
+            }
           } catch (uploadError) {
             console.error('Upload error (continuing with download):', uploadError);
           }
           
-          // Save PDF locally - this should work even if upload fails
+          // Save PDF locally
           pdfDoc.save(`Diagno+_Report_${patientId.value || 'Unknown'}.pdf`);
           
         } catch (error) {
@@ -701,7 +713,7 @@
         } finally {
           downloadReportBtn.disabled = false;
           downloadReportBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Download Report';
-        };
+        }
       });
     });
   </script>
